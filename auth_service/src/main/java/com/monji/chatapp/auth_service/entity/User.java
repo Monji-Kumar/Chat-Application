@@ -1,6 +1,11 @@
 package com.monji.chatapp.auth_service.entity;
 
+import com.monji.chatapp.auth_service.enums.Role;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.*;
 import org.hibernate.annotations.*;
 
@@ -12,6 +17,10 @@ import java.util.Date;
         @Index(name = "idx_user_email", columnList = "email"),
         @Index(name = "idx_user_id", columnList = "id")
 })
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
 
     @Id
@@ -48,4 +57,8 @@ public class User {
 
     @Column(name = "google_id", unique = true)
     private String googleId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role =  Role.USER;
 }
