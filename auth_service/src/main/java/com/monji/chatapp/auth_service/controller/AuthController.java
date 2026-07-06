@@ -2,7 +2,6 @@ package com.monji.chatapp.auth_service.controller;
 
 import com.monji.chatapp.auth_service.dto.LoginRequestDto;
 import com.monji.chatapp.auth_service.dto.RegisterRequestDto;
-import com.monji.chatapp.auth_service.entity.User;
 import com.monji.chatapp.auth_service.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -35,7 +34,13 @@ public class AuthController {
     }
 
     @PostMapping(path = "/refresh")
-    public void refresh(@RequestBody String refreshToken) {
-        authService.refreshToken(refreshToken);
+    public void refresh(HttpServletRequest request, HttpServletResponse response) {
+        authService.refreshToken(request, response);
+    }
+
+    @PostMapping(path = "/logout")
+    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
+        authService.logoutUser(request, response);
+        return ResponseEntity.ok("User Logged Out successfully");
     }
 }
