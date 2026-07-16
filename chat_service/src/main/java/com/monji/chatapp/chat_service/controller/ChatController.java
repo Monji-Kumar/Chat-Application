@@ -59,7 +59,7 @@ public class ChatController {
         String authUserId = request.getHeader("X-User-Id");
         String username = request.getHeader("X-User-Name");
 
-        ChatRoomResponse responseDto = chatService.sendMessage(authUserId, username, chatRoomId);
+        MessageResponse responseDto = chatService.sendMessage(authUserId, username, chatRoomId, requestDto);
         return ResponseEntity.ok(responseDto);
     }
 

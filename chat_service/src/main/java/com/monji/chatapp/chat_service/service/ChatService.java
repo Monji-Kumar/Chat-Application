@@ -1,9 +1,6 @@
 package com.monji.chatapp.chat_service.service;
 
-import com.monji.chatapp.chat_service.dto.ChatRoomResponse;
-import com.monji.chatapp.chat_service.dto.CreateDirectChatRequest;
-import com.monji.chatapp.chat_service.dto.CreateGroupChatRequest;
-import com.monji.chatapp.chat_service.dto.MessageResponse;
+import com.monji.chatapp.chat_service.dto.*;
 
 import java.util.List;
 
@@ -14,7 +11,7 @@ public interface ChatService {
 
     List<MessageResponse> getMessages(String authUserId, Long chatRoomId);
 
-    ChatRoomResponse sendMessage(String authUserId, String username, Long chatRoomId);
+    MessageResponse sendMessage(String authUserId, String username, Long chatRoomId, SendMessageRequest requestDto);
 
     ChatRoomResponse getChatRoom(String authUserId, Long chatRoomId);
 

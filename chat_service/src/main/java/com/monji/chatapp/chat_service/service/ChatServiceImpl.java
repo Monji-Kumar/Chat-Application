@@ -6,6 +6,7 @@ import com.monji.chatapp.chat_service.entity.ChatRoom;
 import com.monji.chatapp.chat_service.entity.Message;
 import com.monji.chatapp.chat_service.enums.ChatMemberRole;
 import com.monji.chatapp.chat_service.enums.ChatRoomType;
+import com.monji.chatapp.chat_service.enums.MessageType;
 import com.monji.chatapp.chat_service.repository.ChatMemberRepository;
 import com.monji.chatapp.chat_service.repository.ChatRoomRepository;
 import com.monji.chatapp.chat_service.repository.MessageRepository;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -115,12 +117,33 @@ public class ChatServiceImpl implements ChatService{
 
     @Override
     public List<MessageResponse> getMessages(String authUserId, Long chatRoomId) {
-        return List.of();
+        return new ArrayList<>();
     }
 
     @Override
-    public ChatRoomResponse sendMessage(String authUserId, String username, Long chatRoomId) {
-        return null;
+    public MessageResponse sendMessage(String authUserId, String username, Long chatRoomId, SendMessageRequest requestDto) {
+        if(authUserId == null || authUserId.isBlank()) {
+            throw new RuntimeException("Missing logged in User ID");
+        } else if(username == null || username.isBlank()) {
+            throw new RuntimeException("Missing logged in Username");
+        } else if (chatRoomId == null || chatRoomId <= 0) {
+            throw new RuntimeException("Missing chat room id");
+        } else if (requestDto.getContent() == null || requestDto.getContent().isBlank()) {
+            throw new RuntimeException("Missing message content");
+        }
+
+        validateMember(chatRoomId, authUserId);
+
+        Message message = Message.builder().chatRoomId(chatRoomId).senderAuthUserId(authUserId)
+                .senderUsername(username).content(requestDto.getContent())
+                .type(requestDto.getMessageType() == null ? MessageType.TEXT :
+                        requestDto.getMessageType())
+                .sentAt(Instant.now()).build();
+
+        message = messageRepository.save(message);
+
+        return mapMessage(message);
+
     }
 
     @Override
@@ -130,7 +153,20 @@ public class ChatServiceImpl implements ChatService{
 
     @Override
     public List<ChatRoomResponse> getMyChats(String authUserId) {
-        return List.of();
+        if(authUserId == null || authUserId.isBlank()) {
+            throw new RuntimeException("Missing logged in User ID");
+        }
+
+        List<ChatMember> memberships = chatMemberRepository.findByAuthUserIdAndLeftAtIsNull(authUserId);
+
+        return memberships.stream()
+                .map(ChatMember::getChatRoomId)
+                .distinct()
+                .map(chatRoomRepository::findById)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .map(this::mapChatRoom)
+                .toList();
     }
 
     private void validateMember(Long chatRoomId, String authUserId) {
