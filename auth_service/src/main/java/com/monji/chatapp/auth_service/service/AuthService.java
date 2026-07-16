@@ -102,7 +102,7 @@ public class AuthService {
         }
     }
 
-    public void loginUser(LoginRequestDto loginRequestDto, HttpServletRequest request, HttpServletResponse response) {
+    public LoginResponseDto loginUser(LoginRequestDto loginRequestDto, HttpServletRequest request, HttpServletResponse response) {
         String  username = loginRequestDto.getUsername();
         String password = loginRequestDto.getPassword();
         Optional<User> userOpt = userRepository.findByUsername(username);
@@ -116,6 +116,12 @@ public class AuthService {
         }
 
         setAuthCookies(user, request, response);
+        
+        return LoginResponseDto.builder()
+                .username(user.getUsername())
+                .role(user.getRole().name())
+                .message("User Logged In Successfully")
+                .build();
     }
 
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) {

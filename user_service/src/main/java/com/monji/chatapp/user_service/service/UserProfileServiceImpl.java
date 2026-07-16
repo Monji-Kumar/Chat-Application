@@ -96,13 +96,11 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     @Override
     public UserProfileResponse getLoggedInUserProfile(HttpServletRequest request, HttpServletResponse response) {
-        String authorization = request.getHeader("Authorization");
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
+        String authUserId = request.getHeader("X-User-Id");
+        if(authUserId == null || authUserId.isBlank()) {
             return null;
-        } else {
-            String token = authorization.substring(7);
-            Long authUserId = jwtService.extractUserId(token);
-            return getUserProfile(String.valueOf(authUserId));
         }
+
+        return getUserProfile(authUserId);
     }
 }

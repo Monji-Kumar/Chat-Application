@@ -1,6 +1,7 @@
 package com.monji.chatapp.auth_service.controller;
 
 import com.monji.chatapp.auth_service.dto.LoginRequestDto;
+import com.monji.chatapp.auth_service.dto.LoginResponseDto;
 import com.monji.chatapp.auth_service.dto.RegisterRequestDto;
 import com.monji.chatapp.auth_service.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,10 +28,10 @@ public class AuthController {
     }
 
     @PostMapping(path = "/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequestDto loginRequestDto, HttpServletRequest request,
+    public ResponseEntity<?> login(@RequestBody LoginRequestDto loginRequestDto, HttpServletRequest request,
                                         HttpServletResponse response) {
-        authService.loginUser(loginRequestDto, request, response);
-        return ResponseEntity.ok("User Logged in successfully");
+        LoginResponseDto responseDto = authService.loginUser(loginRequestDto, request, response);
+        return ResponseEntity.ok(responseDto);
     }
 
     @PostMapping(path = "/refresh")

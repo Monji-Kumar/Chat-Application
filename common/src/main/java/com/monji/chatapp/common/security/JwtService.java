@@ -1,6 +1,7 @@
 package com.monji.chatapp.common.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -70,6 +71,22 @@ public class JwtService {
 
     public boolean isRefreshToken(String token) {
         return "refresh".equals(parseAndValidate(token).get("type", String.class));
+    }
+
+    public boolean isValidToken(String token) {
+        try {
+            if (token == null || token.isBlank()) {
+                return false;
+            }
+
+            Claims claims = parseAndValidate(token);
+
+            return claims.getSubject() != null
+                    && claims.getExpiration() != null
+                    && claims.getExpiration().after(new Date());
+        } catch (JwtException | IllegalArgumentException exception) {
+            return false;
+        }
     }
 }
 

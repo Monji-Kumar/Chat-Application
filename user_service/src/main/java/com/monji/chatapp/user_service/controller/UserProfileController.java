@@ -22,7 +22,7 @@ public class UserProfileController {
     public ResponseEntity<?> getMe(HttpServletRequest request, HttpServletResponse response) {
         UserProfileResponse responseDto = userProfileService.getLoggedInUserProfile(request, response);
         if(responseDto == null){
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Missing or Invalid Authorization Token");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)  .body("Missing or Invalid User Identity");
         }
         return ResponseEntity.ok(responseDto);
     }
