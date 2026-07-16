@@ -9,6 +9,7 @@ import com.monji.chatapp.user_service.entity.UserProfile;
 import com.monji.chatapp.user_service.repository.UserProfileRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
@@ -30,18 +31,15 @@ public class UserProfileServiceImpl implements UserProfileService {
         ValidateRegistrationResponse response = null;
         Optional<UserProfile> userProfileOpt = userProfileRepository.findByUsernameOrEmail(requestDto.getUsername(), requestDto.getEmail());
         if (!userProfileOpt.isPresent()) {
-            response = new ValidateRegistrationResponse();
-            response.setValid(true);
-            response.setEmailAvailable(true);
-            response.setUsernameAvailable(true);
-            response.setMessage("Valid Registration");
+            response = ValidateRegistrationResponse.builder()
+                    .valid(true)
+                    .emailAvailable(true)
+                    .usernameAvailable(true)
+                    .message("Valid Registration")
+                    .build();
         } else {
             boolean emailExists = userProfileRepository.existsByEmail(requestDto.getEmail());
             boolean usernameExists = userProfileRepository.existsByUsername(requestDto.getUsername());
-            response = new ValidateRegistrationResponse();
-            response.setValid(false);
-            response.setEmailAvailable(!emailExists);
-            response.setUsernameAvailable(!usernameExists);
             StringBuilder message = new StringBuilder();
             if(emailExists &&  usernameExists) {
                 message.append("Email and username already exists");
@@ -50,14 +48,27 @@ public class UserProfileServiceImpl implements UserProfileService {
             } else {
                 message.append("Username already exists");
             }
-            response.setMessage(message.toString());
+            response = ValidateRegistrationResponse.builder()
+                    .valid(false)
+                    .emailAvailable(!emailExists)
+                    .usernameAvailable(!usernameExists)
+                    .message(message.toString())
+                    .build();
         }
         return response;
     }
 
     @Override
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public UserProfileResponse createProfile(CreateUserProfileRequest requestDto) {
-        UserProfile profile = modelMapper.map(requestDto, UserProfile.class);
+        UserProfile profile = UserProfile.builder()
+                .authUserId(requestDto.getAuthUserId())
+                .username(requestDto.getUsername())
+                .displayName(requestDto.getDisplayName())
+                .avatarUrl(requestDto.getAvatarUrl())
+                .email(requestDto.getEmail())
+                .statusMessage(requestDto.getStatusMessage())
+                .build();
         profile = userProfileRepository.save(profile);
         return modelMapper.map(profile, UserProfileResponse.class);
     }

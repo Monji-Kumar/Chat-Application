@@ -1,7 +1,7 @@
 package com.monji.chatapp.auth_service.service;
 
-import com.monji.chatapp.auth_service.dto.LoginRequestDto;
-import com.monji.chatapp.auth_service.dto.RegisterRequestDto;
+import com.monji.chatapp.auth_service.client.UserServiceClient;
+import com.monji.chatapp.auth_service.dto.*;
 import com.monji.chatapp.auth_service.entity.RefreshToken;
 import com.monji.chatapp.auth_service.entity.User;
 import com.monji.chatapp.auth_service.exception.InvalidCredentialsException;
@@ -12,6 +12,7 @@ import com.monji.chatapp.common.security.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
@@ -45,6 +46,10 @@ public class AuthService {
     @Autowired
     RefreshTokenRepository refreshTokenRepository;
 
+    @Autowired
+    UserServiceClient userServiceClient;
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void registerUser(RegisterRequestDto registerRequestDto) {
         String username = registerRequestDto.getUsername();
         String password = registerRequestDto.getPassword();
@@ -52,6 +57,18 @@ public class AuthService {
         String phone = registerRequestDto.getPhone();
         String name = registerRequestDto.getName();
 
+        //validate User Request
+        ValidateRegistrationRequest validationRequest = new ValidateRegistrationRequest();
+        validationRequest.setUsername(registerRequestDto.getUsername());
+        validationRequest.setEmail(registerRequestDto.getEmail());
+
+        ValidateRegistrationResponse validationResponse = userServiceClient.validateRegistration(validationRequest);
+
+        if(!validationResponse.isValid()) {
+            throw new UserAlreadyExistsException(validationResponse.getMessage());
+        }
+
+        //Create User
         Optional<User> userOpt = userRepository.findByEmailOrPhoneOrUsername(email, phone, username);
        if(userOpt.isPresent()){
            throw new UserAlreadyExistsException("User already exists");
@@ -68,6 +85,21 @@ public class AuthService {
                .build();
 
        userRepository.save(user);
+
+        CreateUserProfileRequest request = CreateUserProfileRequest.builder()
+                .authUserId(String.valueOf(user.getId()))
+                .statusMessage("")
+                .avatarUrl("")
+                .displayName(username)
+                .username(username)
+                .email(email)
+                .build();
+
+        UserProfileResponse profileResponse = userServiceClient.createProfile(request);
+
+        if(profileResponse == null) {
+            throw new RuntimeException("Unable to Create User Profile. Please try again later");
+        }
     }
 
     public void loginUser(LoginRequestDto loginRequestDto, HttpServletRequest request, HttpServletResponse response) {

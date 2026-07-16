@@ -2,6 +2,7 @@ package com.monji.chatapp.user_service.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_profile_id_gen")
