@@ -82,7 +82,7 @@ public class ChatServiceImpl implements ChatService{
     }
 
     private Optional<ChatRoom> findExistingDirectChat(String authUserId, String targetAuthUserId) {
-        List<ChatMember> myMemberships = chatMemberRepository.findByAuthUserIdAndLeftAtisNull(authUserId);
+        List<ChatMember> myMemberships = chatMemberRepository.findByAuthUserIdAndLeftAtIsNull(authUserId);
 
         for(ChatMember member : myMemberships) {
             Long chatRoomId = member.getChatRoomId();

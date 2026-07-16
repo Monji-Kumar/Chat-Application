@@ -12,5 +12,5 @@ public interface ChatMemberRepository extends JpaRepository<ChatMember, Long> {
 
     List<ChatMember> findAllByChatRoomIdAndLeftAtIsNull(Long chatRoomId);
 
-    List<ChatMember> findByAuthUserIdAndLeftAtisNull(String authUserId);
+    List<ChatMember> findByAuthUserIdAndLeftAtIsNull(String authUserId);
 }
