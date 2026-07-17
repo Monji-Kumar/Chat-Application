@@ -1,5 +1,6 @@
 package com.monji.chatapp.user_service.controller;
 
+import com.monji.chatapp.common.response.ApiResponse;
 import com.monji.chatapp.user_service.dto.CreateUserProfileRequest;
 import com.monji.chatapp.user_service.dto.UserProfileResponse;
 import com.monji.chatapp.user_service.dto.ValidateRegistrationRequest;
@@ -23,12 +24,12 @@ public class InternalUserController {
     @PostMapping(path = "/validate-registration")
     public ResponseEntity<?> validateRegistration(@Valid @RequestBody ValidateRegistrationRequest requestDto) {
         ValidateRegistrationResponse responseDto = userProfileService.validateRegistration(requestDto);
-        return ResponseEntity.ok(responseDto);
+        return ResponseEntity.ok(ApiResponse.success("Registration Request successfully validated", responseDto));
     }
 
     @PostMapping(path = "/create-profile")
     public ResponseEntity<?> createProfile(@Valid @RequestBody CreateUserProfileRequest requestDto) {
         UserProfileResponse responseDto = userProfileService.createProfile(requestDto);
-        return ResponseEntity.ok(responseDto);
+        return ResponseEntity.ok(ApiResponse.success("User profile created successfully", responseDto));
     }
 }

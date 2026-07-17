@@ -7,6 +7,10 @@ import com.monji.chatapp.chat_service.entity.Message;
 import com.monji.chatapp.chat_service.enums.ChatMemberRole;
 import com.monji.chatapp.chat_service.enums.ChatRoomType;
 import com.monji.chatapp.chat_service.enums.MessageType;
+import com.monji.chatapp.chat_service.exception.ChatAccessDeniedException;
+import com.monji.chatapp.chat_service.exception.ChatRoomNotFoundException;
+import com.monji.chatapp.chat_service.exception.InvalidAuthenticationException;
+import com.monji.chatapp.chat_service.exception.InvalidChatRequestException;
 import com.monji.chatapp.chat_service.repository.ChatMemberRepository;
 import com.monji.chatapp.chat_service.repository.ChatRoomRepository;
 import com.monji.chatapp.chat_service.repository.MessageRepository;
@@ -33,17 +37,17 @@ public class ChatServiceImpl implements ChatService{
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public ChatRoomResponse createDirectChat(String authUserId, String username, CreateDirectChatRequest requestDto) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (username == null || username.isBlank()) {
-            throw new RuntimeException("Missing logged in Username");
+            throw new InvalidAuthenticationException("Missing logged in Username");
         }
 
         if(requestDto.getTargetAuthUserId() == null || requestDto.getTargetAuthUserId().isBlank()) {
-            throw new RuntimeException("Target User id is required");
+            throw new InvalidChatRequestException("Target User id is required");
         }
         //TODO: this is to be removed later on
         else if (Objects.equals(authUserId, requestDto.getTargetAuthUserId())) {
-            throw new RuntimeException("Cannot send message to yourself");
+            throw new InvalidChatRequestException("Cannot send message to yourself");
         }
         Optional<ChatRoom> chatRoomOpt = findExistingDirectChat(authUserId, requestDto.getTargetAuthUserId());
 
@@ -114,13 +118,13 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public ChatRoomResponse createGroupChat(String authUserId, String username, CreateGroupChatRequest requestDto) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (username == null || username.isBlank()) {
-            throw new RuntimeException("Missing logged in Username");
+            throw new InvalidAuthenticationException("Missing logged in Username");
         } else if (requestDto.getName() == null || requestDto.getName().isBlank()) {
-            throw new RuntimeException("Missing Group chat name");
+            throw new InvalidChatRequestException("Missing Group chat name");
         } else if (requestDto.getMembers() == null || requestDto.getMembers().isEmpty()) {
-            throw new RuntimeException("Missing group chat members");
+            throw new InvalidChatRequestException("Missing group chat members");
         }
 
         //create new Chat Room
@@ -147,6 +151,7 @@ public class ChatServiceImpl implements ChatService{
         for(CreateGroupMemberRequest request : requestDto.getMembers()) {
             if(request.getAuthUserId() == null || request.getAuthUserId().isBlank()) {
                 log.error("Chat Member does not have an Auth User ID");
+                continue;
             }
             if(authUserId.equals(request.getAuthUserId())) {
                 continue;
@@ -162,9 +167,7 @@ public class ChatServiceImpl implements ChatService{
                     .leftAt(null).build();
 
             chatMemberRepository.save(memberUser);
-
         }
-
 
         return mapChatRoom(chatRoom);
     }
@@ -172,9 +175,9 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public List<MessageResponse> getMessages(String authUserId, Long chatRoomId) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing logged in Chat Room ID");
+            throw new InvalidChatRequestException("Missing logged in Chat Room ID");
         }
 
         validateMember(chatRoomId, authUserId);
@@ -186,13 +189,13 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public MessageResponse sendMessage(String authUserId, String username, Long chatRoomId, SendMessageRequest requestDto) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if(username == null || username.isBlank()) {
-            throw new RuntimeException("Missing logged in Username");
+            throw new InvalidAuthenticationException("Missing logged in Username");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing chat room id");
+            throw new InvalidChatRequestException("Missing chat room id");
         } else if (requestDto.getContent() == null || requestDto.getContent().isBlank()) {
-            throw new RuntimeException("Missing message content");
+            throw new InvalidChatRequestException("Missing message content");
         }
 
         validateMember(chatRoomId, authUserId);
@@ -212,9 +215,9 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public ChatRoomResponse getChatRoom(String authUserId, Long chatRoomId) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing logged in Chat Room ID");
+            throw new InvalidChatRequestException("Missing logged in Chat Room ID");
         }
 
         validateMember(chatRoomId, authUserId);
@@ -227,7 +230,7 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public List<ChatRoomResponse> getMyChats(String authUserId) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         }
 
         List<ChatMember> memberships = chatMemberRepository.findByAuthUserIdAndLeftAtIsNull(authUserId);
@@ -246,7 +249,7 @@ public class ChatServiceImpl implements ChatService{
         boolean isMember = chatMemberRepository.existsByChatRoomIdAndAuthUserId(chatRoomId, authUserId);
 
         if(!isMember){
-            throw new RuntimeException("You are not a member of this chat");
+            throw new ChatAccessDeniedException("You are not a member of this chat");
         }
     }
 
@@ -305,32 +308,32 @@ public class ChatServiceImpl implements ChatService{
     @Transactional
     public ChatMemberResponse addMember(String authUserId, Long chatRoomId, AddChatMemberRequest requestDto) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing logged in Chat Room ID");
+            throw new InvalidChatRequestException("Missing logged in Chat Room ID");
         } else if (requestDto.getAuthUserId() == null || requestDto.getAuthUserId().isBlank()) {
-            throw new RuntimeException("Missing New Member in User ID");
+            throw new InvalidChatRequestException("Missing New Member in User ID");
         }
 
-        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new RuntimeException("Chat Room Not Found"));
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("Chat Room Not Found"));
 
         if(chatRoom.getType() != ChatRoomType.GROUP) {
-            throw new RuntimeException("Members can only be added to group chats");
+            throw new InvalidChatRequestException("Members can only be added to group chats");
         }
 
         ChatMember currentMember = chatMemberRepository
                 .findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, authUserId)
-                .orElseThrow(() -> new RuntimeException("You are not a member of this chat"));
+                .orElseThrow(() -> new ChatAccessDeniedException("You are not a member of this chat"));
 
         if(currentMember.getRole() != ChatMemberRole.OWNER && currentMember.getRole() != ChatMemberRole.ADMIN) {
-            throw new RuntimeException("Only Admins and Owners can add a new Member");
+            throw new InvalidChatRequestException("Only Admins and Owners can add a new Member");
         }
 
         boolean isAlreadyMember = chatMemberRepository
                 .existsByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, authUserId);
 
         if(isAlreadyMember) {
-            throw new RuntimeException("User is already a member of this chat");
+            throw new InvalidChatRequestException("User is already a member of this chat");
         }
 
         ChatMember member = ChatMember.builder()
@@ -352,30 +355,30 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public ChatMemberResponse removeMember(String authUserId, Long chatRoomId, String memberAuthUserId) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing logged in Chat Room ID");
+            throw new InvalidChatRequestException("Missing logged in Chat Room ID");
         } else if (memberAuthUserId == null || memberAuthUserId.isBlank()) {
-            throw new RuntimeException("Missing Member in User ID");
+            throw new InvalidChatRequestException("Missing Member in User ID");
         }
 
-        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new RuntimeException("Chat Room Not Found"));
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("Chat Room Not Found"));
 
         ChatMember currentMember = chatMemberRepository
                 .findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, authUserId)
-                .orElseThrow(() -> new RuntimeException("You are not a member of this chat"));
+                .orElseThrow(() -> new ChatAccessDeniedException("You are not a member of this chat"));
 
         if(currentMember.getRole() != ChatMemberRole.OWNER && currentMember.getRole() != ChatMemberRole.ADMIN) {
-            throw new RuntimeException("Only Admins and Owners can remove a new Member");
+            throw new InvalidChatRequestException("Only Admins and Owners can remove a new Member");
         }
 
         if(memberAuthUserId.equals(chatRoom.getCreatedBy())) {
-            throw new RuntimeException("Group owner cannot be removed");
+            throw new InvalidChatRequestException("Group owner cannot be removed");
         }
 
         ChatMember memberToRemove = chatMemberRepository
                 .findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, memberAuthUserId)
-                .orElseThrow(() -> new RuntimeException("User is not an active member of this chat"));
+                .orElseThrow(() -> new ChatAccessDeniedException("User is not an active member of this chat"));
 
         memberToRemove.setLeftAt(Instant.now());
 
@@ -388,25 +391,25 @@ public class ChatServiceImpl implements ChatService{
     @Override
     public ChatMemberResponse leaveChatRoom(String authUserId, Long chatRoomId) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing logged in Chat Room ID");
+            throw new InvalidChatRequestException("Missing logged in Chat Room ID");
         }
 
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new RuntimeException("Chat room not found"));
+                .orElseThrow(() -> new ChatRoomNotFoundException("Chat room not found"));
 
         if (chatRoom.getType() != ChatRoomType.GROUP) {
-            throw new RuntimeException("Only group chats can be left");
+            throw new InvalidChatRequestException("Only group chats can be left");
         }
 
         if (authUserId.equals(chatRoom.getCreatedBy())) {
-            throw new RuntimeException("Group owner cannot leave before transferring ownership");
+            throw new InvalidAuthenticationException("Group owner cannot leave before transferring ownership");
         }
 
         ChatMember member = chatMemberRepository
                 .findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, authUserId)
-                .orElseThrow(() -> new RuntimeException("You are not an active member of this chat"));
+                .orElseThrow(() -> new ChatAccessDeniedException("You are not an active member of this chat"));
 
         member.setLeftAt(Instant.now());
 
@@ -419,43 +422,43 @@ public class ChatServiceImpl implements ChatService{
     @Transactional
     public ChatMemberResponse updateMemberRole(String authUserId, Long chatRoomId, String memberAuthUserId, UpdateMemberRoleRequest requestDto) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing logged in Chat Room ID");
+            throw new InvalidChatRequestException("Missing logged in Chat Room ID");
         } else if (memberAuthUserId == null || memberAuthUserId.isBlank()) {
-            throw new RuntimeException("Missing Member in User ID");
+            throw new InvalidChatRequestException("Missing Member in User ID");
         }
 
         if(requestDto.getRole() == null) {
-            throw new RuntimeException("Role is required");
+            throw new InvalidChatRequestException("Role is required");
         }
 
         if(requestDto.getRole() == ChatMemberRole.OWNER) {
-            throw new RuntimeException("Use transfer ownership API to make someone owner");
+            throw new ChatAccessDeniedException("Use transfer ownership API to make someone owner");
         }
 
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)
-                .orElseThrow(() -> new RuntimeException("Chat room not found"));
+                .orElseThrow(() -> new ChatRoomNotFoundException("Chat room not found"));
 
         if (chatRoom.getType() != ChatRoomType.GROUP) {
-            throw new RuntimeException("Roles can only be changed in group chats");
+            throw new InvalidChatRequestException("Roles can only be changed in group chats");
         }
 
         ChatMember currentMember = chatMemberRepository
                 .findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, authUserId)
-                .orElseThrow(() -> new RuntimeException("You are not a member of this chat"));
+                .orElseThrow(() -> new ChatAccessDeniedException("You are not a member of this chat"));
 
         if (currentMember.getRole() != ChatMemberRole.OWNER) {
-            throw new RuntimeException("Only owner can update member roles");
+            throw new ChatAccessDeniedException("Only owner can update member roles");
         }
 
         if (authUserId.equals(memberAuthUserId)) {
-            throw new RuntimeException("Owner cannot change their own role");
+            throw new InvalidChatRequestException("Owner cannot change their own role");
         }
 
         ChatMember targetMember = chatMemberRepository
                 .findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, memberAuthUserId)
-                .orElseThrow(() -> new RuntimeException("Target user is not an active member"));
+                .orElseThrow(() -> new ChatAccessDeniedException("Target user is not an active member"));
 
         targetMember.setRole(requestDto.getRole());
 
@@ -468,32 +471,32 @@ public class ChatServiceImpl implements ChatService{
     @Transactional
     public ChatRoomResponse updateChatRoomOwnership(String authUserId, Long chatRoomId, String memberAuthUserId) {
         if(authUserId == null || authUserId.isBlank()) {
-            throw new RuntimeException("Missing logged in User ID");
+            throw new InvalidAuthenticationException("Missing logged in User ID");
         } else if (chatRoomId == null || chatRoomId <= 0) {
-            throw new RuntimeException("Missing logged in Chat Room ID");
+            throw new InvalidChatRequestException("Missing logged in Chat Room ID");
         } else if (memberAuthUserId == null || memberAuthUserId.isBlank()) {
-            throw new RuntimeException("Missing Member in User ID");
+            throw new InvalidChatRequestException("Missing Member in User ID");
         }
 
         if(authUserId.equals(memberAuthUserId)) {
-            throw new RuntimeException("You are already the owner");
+            throw new InvalidChatRequestException("You are already the owner");
         }
 
-        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new RuntimeException("No Chat Room found"));
+        ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId).orElseThrow(() -> new ChatRoomNotFoundException("No Chat Room found"));
 
         if(chatRoom.getType() != ChatRoomType.GROUP) {
-            throw new RuntimeException("Ownership can only be transferred for group chats");
+            throw new InvalidChatRequestException("Ownership can only be transferred for group chats");
         }
 
-        ChatMember currentMember = chatMemberRepository.findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, authUserId).orElseThrow(() -> new RuntimeException("You are not a member of this Chat"));
+        ChatMember currentMember = chatMemberRepository.findByChatRoomIdAndAuthUserIdAndLeftAtIsNull(chatRoomId, authUserId).orElseThrow(() -> new ChatAccessDeniedException("You are not a member of this Chat"));
 
         if(currentMember.getRole() != ChatMemberRole.OWNER) {
-            throw new RuntimeException("Only owner can transfer ownership");
+            throw new InvalidChatRequestException("Only owner can transfer ownership");
         }
 
         ChatMember newOwner = chatMemberRepository.findByChatRoomIdAndAuthUserIdAndLeftAtIsNull
                         (chatRoomId, memberAuthUserId)
-                .orElseThrow(() -> new RuntimeException("New owner must be an active member"));
+                .orElseThrow(() -> new ChatAccessDeniedException("New owner must be an active member"));
 
         currentMember.setRole(ChatMemberRole.MEMBER);
         newOwner.setRole(ChatMemberRole.OWNER);

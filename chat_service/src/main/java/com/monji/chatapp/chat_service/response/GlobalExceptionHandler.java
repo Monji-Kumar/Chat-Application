@@ -1,4 +1,4 @@
-package com.monji.chatapp.user_service.advice;
+package com.monji.chatapp.chat_service.response;
 
 import com.monji.chatapp.common.exceptions.AppException;
 import com.monji.chatapp.common.response.ApiError;

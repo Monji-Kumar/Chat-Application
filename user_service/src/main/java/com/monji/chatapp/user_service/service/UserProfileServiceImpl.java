@@ -1,11 +1,12 @@
 package com.monji.chatapp.user_service.service;
 
-import com.monji.chatapp.common.security.JwtService;
 import com.monji.chatapp.user_service.dto.CreateUserProfileRequest;
 import com.monji.chatapp.user_service.dto.UserProfileResponse;
 import com.monji.chatapp.user_service.dto.ValidateRegistrationRequest;
 import com.monji.chatapp.user_service.dto.ValidateRegistrationResponse;
 import com.monji.chatapp.user_service.entity.UserProfile;
+import com.monji.chatapp.user_service.exceptions.UnauthorizedUserException;
+import com.monji.chatapp.user_service.exceptions.UserProfileNotFoundException;
 import com.monji.chatapp.user_service.repository.UserProfileRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,13 +25,12 @@ public class UserProfileServiceImpl implements UserProfileService {
 
     private final UserProfileRepository userProfileRepository;
     private final ModelMapper modelMapper;
-    private final JwtService jwtService;
 
     @Override
     public ValidateRegistrationResponse validateRegistration(ValidateRegistrationRequest requestDto) {
         ValidateRegistrationResponse response = null;
         Optional<UserProfile> userProfileOpt = userProfileRepository.findByUsernameOrEmail(requestDto.getUsername(), requestDto.getEmail());
-        if (!userProfileOpt.isPresent()) {
+        if (userProfileOpt.isEmpty()) {
             response = ValidateRegistrationResponse.builder()
                     .valid(true)
                     .emailAvailable(true)
@@ -76,8 +76,8 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     public UserProfileResponse getUserProfile(String authUserId) {
         Optional<UserProfile> userProfile = userProfileRepository.findByAuthUserId(authUserId);
-        if (!userProfile.isPresent()) {
-            return new UserProfileResponse();
+        if (userProfile.isEmpty()) {
+            throw new UserProfileNotFoundException("No User Profile found!");
         } else {
             return modelMapper.map(userProfile.get(), UserProfileResponse.class);
         }
@@ -98,7 +98,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     public UserProfileResponse getLoggedInUserProfile(HttpServletRequest request, HttpServletResponse response) {
         String authUserId = request.getHeader("X-User-Id");
         if(authUserId == null || authUserId.isBlank()) {
-            return null;
+           throw new UnauthorizedUserException("Authentication Failed flor logged In user");
         }
 
         return getUserProfile(authUserId);

@@ -1,7 +1,10 @@
 package com.monji.chatapp.auth_service.exception;
 
-public class InvalidCredentialsException extends RuntimeException {
+import com.monji.chatapp.common.exceptions.AppException;
+import org.springframework.http.HttpStatus;
+
+public class InvalidCredentialsException extends AppException {
     public InvalidCredentialsException(String message) {
-        super(message);
+        super(message, "INVALID_CREDENTIALS",  HttpStatus.UNAUTHORIZED);
     }
 }
