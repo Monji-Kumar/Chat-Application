@@ -70,4 +70,44 @@ public class ChatController {
         List<MessageResponse> response = chatService.getMessages(authUserId, chatRoomId);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping(path = "/by-room-id/group/add-members")
+    public ResponseEntity<?> addGroupChatMember(@RequestParam Long chatRoomId , @RequestBody AddChatMemberRequest requestDto, HttpServletRequest request) {
+        String authUserId = request.getHeader("X-User-Id");
+
+        ChatMemberResponse response = chatService.addMember(authUserId, chatRoomId, requestDto);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping(path = "/by-room-id/group/remove")
+    public ResponseEntity<?> removeMember(@RequestParam Long chatRoomId, String memberAuthUserId, HttpServletRequest request) {
+        String authUserId = request.getHeader("X-User-Id");
+
+        ChatMemberResponse responseDto = chatService.removeMember(authUserId, chatRoomId, memberAuthUserId);
+        return ResponseEntity.ok(responseDto);
+    }
+
+    @PostMapping(path = "/by-room-id/group/leave")
+    public ResponseEntity<?> leaveGroup(@RequestParam Long chatRoomId, HttpServletRequest request) {
+        String authUserId = request.getHeader("X-User-Id");
+
+        ChatMemberResponse responseDto = chatService.leaveChatRoom(authUserId, chatRoomId);
+        return ResponseEntity.ok(responseDto);
+    }
+
+    @PatchMapping(path = "/by-room-id/group/role")
+    public ResponseEntity<?> changeMemberRole(@RequestParam Long chatRoomId, @RequestParam String memberAuthUserId, @RequestBody UpdateMemberRoleRequest requestDto, HttpServletRequest request) {
+        String authUserId = request.getHeader("X-User-Id");
+
+        ChatMemberResponse responseDto = chatService.updateMemberRole(authUserId, chatRoomId, memberAuthUserId, requestDto);
+        return ResponseEntity.ok(responseDto);
+    }
+
+    @PatchMapping(path = "/by-room-id/group/ownership")
+    public ResponseEntity<?> changeChatRoomOnwership(@RequestParam Long chatRoomId, @RequestParam String memberAuthUserId, HttpServletRequest request) {
+        String authUserId = request.getHeader("X-User-Id");
+
+        ChatRoomResponse responseDto = chatService.updateChatRoomOwnership(authUserId, chatRoomId, memberAuthUserId);
+        return ResponseEntity.ok(responseDto);
+    }
 }

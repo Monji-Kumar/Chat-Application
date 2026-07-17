@@ -16,4 +16,14 @@ public interface ChatService {
     ChatRoomResponse getChatRoom(String authUserId, Long chatRoomId);
 
     List<ChatRoomResponse> getMyChats(String authUserId);
+
+    ChatMemberResponse addMember(String authUserId, Long chatRoomId, AddChatMemberRequest requestDto);
+
+    ChatMemberResponse removeMember(String authUserId, Long chatRoomId, String memberAuthUserId);
+
+    ChatMemberResponse leaveChatRoom(String authUserId, Long chatRoomId);
+
+    ChatMemberResponse updateMemberRole(String authUserId, Long chatRoomId, String memberAuthUserId, UpdateMemberRoleRequest requestDto);
+
+    ChatRoomResponse updateChatRoomOwnership(String authUserId, Long chatRoomId, String memberAuthUserId);
 }
