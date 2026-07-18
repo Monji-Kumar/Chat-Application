@@ -31,7 +31,7 @@ public class WebSocketMessageController {
 
         MessageResponse savedMessage = chatService.sendMessage(
                 authUserId,
-                authUserId,
+                username,
                 request.getChatRoomId(),
                 sendMessageRequest
         );

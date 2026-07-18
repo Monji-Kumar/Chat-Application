@@ -4,6 +4,7 @@ import com.monji.chatapp.auth_service.dto.CreateUserProfileRequest;
 import com.monji.chatapp.auth_service.dto.UserProfileResponse;
 import com.monji.chatapp.auth_service.dto.ValidateRegistrationRequest;
 import com.monji.chatapp.auth_service.dto.ValidateRegistrationResponse;
+import com.monji.chatapp.common.response.ApiResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 public interface UserServiceClient {
 
     @PostMapping(path = "/validate-registration")
-    ValidateRegistrationResponse validateRegistration(@RequestBody ValidateRegistrationRequest request);
+    ApiResponse<ValidateRegistrationResponse> validateRegistration(@RequestBody ValidateRegistrationRequest request);
 
     @PostMapping("/create-profile")
-    UserProfileResponse createProfile(@RequestBody CreateUserProfileRequest request);
+    ApiResponse<UserProfileResponse> createProfile(@RequestBody CreateUserProfileRequest request);
 }

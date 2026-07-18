@@ -8,6 +8,7 @@ import com.monji.chatapp.auth_service.exception.InvalidCredentialsException;
 import com.monji.chatapp.auth_service.exception.UserAlreadyExistsException;
 import com.monji.chatapp.auth_service.repository.RefreshTokenRepository;
 import com.monji.chatapp.auth_service.repository.UserRepository;
+import com.monji.chatapp.common.response.ApiResponse;
 import com.monji.chatapp.common.security.JwtService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,8 +63,9 @@ public class AuthService {
         validationRequest.setUsername(registerRequestDto.getUsername());
         validationRequest.setEmail(registerRequestDto.getEmail());
 
-        ValidateRegistrationResponse validationResponse = userServiceClient.validateRegistration(validationRequest);
+        ApiResponse<ValidateRegistrationResponse> apiResponse = userServiceClient.validateRegistration(validationRequest);
 
+        ValidateRegistrationResponse validationResponse = apiResponse.getData();
         if(!validationResponse.isValid()) {
             throw new UserAlreadyExistsException(validationResponse.getMessage());
         }
@@ -95,8 +97,9 @@ public class AuthService {
                 .email(email)
                 .build();
 
-        UserProfileResponse profileResponse = userServiceClient.createProfile(request);
+        ApiResponse<UserProfileResponse> profileApiResponse = userServiceClient.createProfile(request);
 
+        UserProfileResponse profileResponse = profileApiResponse.getData();
         if(profileResponse == null) {
             throw new RuntimeException("Unable to Create User Profile. Please try again later");
         }
@@ -193,16 +196,16 @@ public class AuthService {
 
         ResponseCookie accessCookie = ResponseCookie.from("access_token", accessToken)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+//                .secure(true)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(Duration.ofMinutes(15))
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+//                .secure(true)
+                .sameSite("Lax")
                 .path("/")
                 .maxAge(Duration.ofDays(7))
                 .build();

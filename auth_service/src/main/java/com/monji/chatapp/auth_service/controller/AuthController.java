@@ -25,7 +25,7 @@ public class AuthController {
     public ResponseEntity<?> registerUser(@RequestBody RegisterRequestDto registerRequestDto)
     {
         authService.registerUser(registerRequestDto);
-        return ResponseEntity.ok(ApiResponse.success("Chat room created successfully", new Object()));
+        return ResponseEntity.ok(ApiResponse.success("User registered Successfully", new Object()));
     }
 
     @PostMapping(path = "/login")
